@@ -72,10 +72,6 @@ void setup() {
     // Initialize Serial for receiving commands
     Serial.begin(9600);
 
-    // Set initial motor speed and acceleration
-    stepper.setMaxSpeed(motorSpeed);
-    stepper.setAcceleration(DEFAULT_ACCELERATION);
-
     // Init App
     Serial.println("Aplicação Iniciada");
 }
@@ -121,14 +117,16 @@ void loop() {
 // Function to initialize the motor by moving until the reed switch is triggered
 void resetMotor() {
     // Move slowly until reed switch is triggered
+    stepper.setAcceleration(DEFAULT_ACCELERATION);
     stepper.setSpeed(-DEFAULT_SPEED);
-    Serial.println("Encontrando Fim de Curso");
+    stepper.setMaxSpeed(-DEFAULT_SPEED);
 
+    Serial.println("Encontrando Fim de Curso...");
     while (digitalRead(REED_PIN) != LOW) {
         stepper.runSpeed(); // Keep stepping until reed switch is triggered
     }
-
     Serial.println("Encontrado!");
+    
     // Stop motor
     stepper.stop();
 }
