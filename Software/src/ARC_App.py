@@ -9,6 +9,7 @@ DEFAULT_BAUDRATE = 9600
 DEFAULT_SPEED = 500
 DEFAULT_DISTANCE = 200
 DEFAULT_TIME = 5000
+MAX_DISTANCE = 3500
 
 class ARC_App(ctk.CTkFrame):
     def __init__(self, master):
@@ -124,7 +125,7 @@ class ARC_App(ctk.CTkFrame):
         self.speed1Entry.entry.insert(0, str(DEFAULT_SPEED))
         self.speed1Entry.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
         
-        self.distanceEntry = EntryBoxLabel(parametersFrame, "Distancia (Step/s)")
+        self.distanceEntry = EntryBoxLabel(parametersFrame, "Distancia (Step/s)", min_value=0, max_value=MAX_DISTANCE)
         self.distanceEntry.entry.insert(0, str(DEFAULT_DISTANCE))
         self.distanceEntry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
         
@@ -133,9 +134,14 @@ class ARC_App(ctk.CTkFrame):
         self.delayEntry.grid(row=1, column=2, padx=5, pady=5, sticky="ew")
         
         self.speed2Entry = EntryBoxLabel(parametersFrame, "Velocidade 2 (Steps/s)")
+        self.speed2Entry.entry.insert(0, str(DEFAULT_SPEED))
         self.speed2Entry.grid(row=1, column=3, padx=5, pady=5, sticky="ew")
         
     def __createAppButton(self):
+        
+        self.resetBtn = ctk.CTkButton(self.central_frame, text="Reset", command=self.__reset, font=("Helvetica", 16))
+        self.resetBtn.pack(pady=10)
+        
         self.runBtn = ctk.CTkButton(self.central_frame, text="Run", command=self.__runCommand, font=("Helvetica", 16))
         self.runBtn.pack(pady=10)
         
@@ -170,15 +176,54 @@ class ARC_App(ctk.CTkFrame):
             print(f"Sent: DELAY {delay}")
             response = self.serial_connection.readline().decode().strip()
             print(f"Response: {response}")
-    
+            
+            # Run App
+            self.serial_connection.write("RUN\n".encode())
+            
         except serial.SerialException as e:
             print(f"Error sending data: {e}")
 
+    def __reset(self):
+        if not self.serial_connection or not self.serial_connection.is_open:
+            print("No open serial connection.")
+            return
+
+        try:
+            # Send RESET
+            self.serial_connection.write("RESET\n".encode())
+            print("Sent: RESET")
+
+            # Timeout
+            timeout = 10
+            start_time = time.time()
+
+            # Wait for Reset
+            while True:
+                # Verify timeout
+                if time.time() - start_time > timeout:
+                    print("Timeout: Device not found.")
+                    break
+
+                # Read response
+                response = self.serial_connection.readline().decode().strip()
+                if "Encontrado!" in response:
+                    print("Resetado")
+                    break
+
+                # Wait for a while
+                time.sleep(0.1)
+
+        except serial.SerialException as e:
+            print(f"Error during reset: {e}")
+        
 
 class EntryBoxLabel(ctk.CTkFrame):
-    def __init__(self, master, label_text):
+    def __init__(self, master, label_text, min_value=None, max_value=None):
         super().__init__(master)
         
+        self.min_value = min_value  # Valor mínimo permitido
+        self.max_value = max_value  # Valor máximo permitido
+
         # Label
         self.label = ctk.CTkLabel(self, text=label_text, font=("Helvetica", 14, "bold"))
         self.label.grid(row=0, column=0, padx=10, pady=(0, 0), sticky="ew")
@@ -189,4 +234,19 @@ class EntryBoxLabel(ctk.CTkFrame):
         self.entry.grid(row=1, column=0, padx=10, pady=(0, 10), sticky="ew")
         
     def validate_numeric(self, value):
-        return value.isdigit() or value == ""
+        """Permite apenas valores numéricos dentro do intervalo especificado."""
+        # Permitir valor vazio para facilitar a edição
+        if value == "":
+            return True
+
+        # Verifica se o valor é numérico
+        if value.isdigit():
+            numeric_value = int(value)
+
+            # Verifica se está dentro dos limites, se forem definidos
+            if (self.min_value is not None and numeric_value < self.min_value):
+                return False
+            if (self.max_value is not None and numeric_value > self.max_value):
+                return False
+            return True
+        return False
