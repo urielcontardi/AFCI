@@ -57,6 +57,7 @@ AccelStepper stepper(AccelStepper::DRIVER, STEP_PIN, DIR_PIN);
 
 // Variables for configuration
 int motorSpeed = DEFAULT_SPEED;
+int motorSpeed2 = DEFAULT_SPEED;
 int motorDistance = DEFAULT_DISTANCE;
 int motorTime = DEFAULT_TIME;
 
@@ -85,6 +86,11 @@ void loop() {
             motorSpeed = command.substring(6).toInt();
             Serial.print("Motor speed set to: ");
             Serial.println(motorSpeed);
+        }
+        else if (command.startsWith("SPEED2 ")) {
+            motorSpeed2 = command.substring(7).toInt();
+            Serial.print("Motor speed2 set to: ");
+            Serial.println(motorSpeed2);
         } 
         else if (command.startsWith("DISTANCE ")) {
             motorDistance = command.substring(9).toInt();
@@ -147,7 +153,8 @@ void runMotor() {
     // Wait for the configured time
     delay(motorTime);
 
-    // Encontrar o segundo fim de curso
+    // Go to end state
+    stepper.setSpeed(motorSpeed2);
     int resto = MAX_DISTANCE - motorDistance;
     stepper.moveTo(resto);
 
