@@ -7,9 +7,10 @@ import time
 
 DEFAULT_BAUDRATE = 9600
 DEFAULT_SPEED = 500
-DEFAULT_DISTANCE = 200
+DEFAULT_DISTANCE = 1000
 DEFAULT_TIME = 5000
-MAX_DISTANCE = 3500
+MAX_DISTANCE = 14000
+MAX_SPEED = 1500
 
 class ARC_App(ctk.CTkFrame):
     def __init__(self, master):
@@ -134,7 +135,7 @@ class ARC_App(ctk.CTkFrame):
         self.delayEntry.grid(row=1, column=2, padx=5, pady=5, sticky="ew")
         
         self.speed2Entry = EntryBoxLabel(parametersFrame, "Velocidade 2 (Steps/s)")
-        self.speed2Entry.entry.insert(0, str(DEFAULT_SPEED))
+        self.speed2Entry.entry.insert(0, str(MAX_SPEED))
         self.speed2Entry.grid(row=1, column=3, padx=5, pady=5, sticky="ew")
         
     def __createAppButton(self):
@@ -164,6 +165,11 @@ class ARC_App(ctk.CTkFrame):
             
             self.serial_connection.write(f"SPEED {speed1}\n".encode())
             print(f"Sent: SPEED {speed1}")
+            response = self.serial_connection.readline().decode().strip()  # Lê e decodifica a resposta
+            print(f"Response: {response}")
+
+            self.serial_connection.write(f"SPEED2 {speed2}\n".encode())
+            print(f"Sent: SPEED2 {speed2}")
             response = self.serial_connection.readline().decode().strip()  # Lê e decodifica a resposta
             print(f"Response: {response}")
     
